@@ -1,65 +1,123 @@
 import cv2
+import mediapipe as mp
+import numpy as np
+import math
 
-# Load Haar Cascades
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
-smile_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_smile.xml"
+# -------------------------
+# Configuration
+# -------------------------
+SMOOTHING = 0.7          # Higher = smoother, less jitter
+MOVE_THRESHOLD = 4      # Ignore tiny motion (pixels)
+DRAW_COLOR = (0, 0, 255)
+DRAW_THICKNESS = 4
+
+# -------------------------
+# MediaPipe Setup
+# -------------------------
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(
+    max_num_hands=1,
+    model_complexity=1,
+    min_detection_confidence=0.8,
+    min_tracking_confidence=0.8
 )
 
-# Start webcam
+# -------------------------
+# Webcam + Canvas
+# -------------------------
 cap = cv2.VideoCapture(0)
+canvas = None
 
-def pixelate_face(face, blocks=10):
-    h, w = face.shape[:2]
-    x_steps = w // blocks
-    y_steps = h // blocks
+prev_x, prev_y = None, None
+smooth_x, smooth_y = None, None
+drawing = False
 
-    for y in range(0, h, y_steps):
-        for x in range(0, w, x_steps):
-            face[y:y+y_steps, x:x+x_steps] = face[y, x]
-    return face
+# -------------------------
+# Utility Functions
+# -------------------------
+def smooth_point(prev, current, alpha):
+    if prev is None:
+        return current
+    return int(alpha * prev + (1 - alpha) * current)
 
+def distance(p1, p2):
+    return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+
+# -------------------------
+# Main Loop
+# -------------------------
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    frame = cv2.flip(frame, 1)
+    h, w, _ = frame.shape
 
-    for (x, y, w, h) in faces:
-        roi_gray = gray[y:y+h, x:x+w]
-        roi_color = frame[y:y+h, x:x+w]
+    if canvas is None:
+        canvas = np.zeros_like(frame)
 
-        smiles = smile_cascade.detectMultiScale(
-            roi_gray,
-            scaleFactor=1.7,
-            minNeighbors=20
-        )
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    result = hands.process(rgb)
 
-        if len(smiles) == 0:
-            roi_color[:] = pixelate_face(roi_color)
-            label = "Privacy Mode"
+    if result.multi_hand_landmarks:
+        hand = result.multi_hand_landmarks[0]
+
+        # Index finger tip
+        ix = int(hand.landmark[8].x * w)
+        iy = int(hand.landmark[8].y * h)
+
+        # Index finger PIP joint (for up/down check)
+        pip_y = int(hand.landmark[6].y * h)
+
+        # Thumb tip
+        tx = int(hand.landmark[4].x * w)
+        ty = int(hand.landmark[4].y * h)
+
+        # Gesture detection
+        index_up = iy < pip_y
+        thumb_index_dist = distance((ix, iy), (tx, ty))
+
+        # Clear canvas gesture
+        if thumb_index_dist < 30:
+            canvas[:] = 0
+            prev_x, prev_y = None, None
+            drawing = False
+
+        # Drawing logic
+        if index_up:
+            drawing = True
+
+            smooth_x = smooth_point(smooth_x, ix, SMOOTHING)
+            smooth_y = smooth_point(smooth_y, iy, SMOOTHING)
+
+            if prev_x is not None:
+                if distance((prev_x, prev_y), (smooth_x, smooth_y)) > MOVE_THRESHOLD:
+                    cv2.line(
+                        canvas,
+                        (prev_x, prev_y),
+                        (smooth_x, smooth_y),
+                        DRAW_COLOR,
+                        DRAW_THICKNESS
+                    )
+
+            prev_x, prev_y = smooth_x, smooth_y
+
         else:
-            label = "Smile Detected"
+            drawing = False
+            prev_x, prev_y = None, None
 
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        cv2.putText(
-            frame,
-            label,
-            (x, y - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            2
-        )
+        cv2.circle(frame, (ix, iy), 8, (0, 255, 0), -1)
 
-    cv2.imshow("Smart Face Detection", frame)
+    # Overlay drawing on video
+    output = cv2.add(frame, canvas)
+    cv2.imshow("High-Accuracy Hand Drawing", output)
 
-    if cv2.waitKey(1) & 0xFF == 27:  # ESC to exit
+    if cv2.waitKey(1) & 0xFF == 27:
         break
 
+# -------------------------
+# Cleanup
+# -------------------------
 cap.release()
 cv2.destroyAllWindows()
