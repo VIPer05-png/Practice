@@ -2,6 +2,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "AnimalTest",
+            "request": "launch",
+            "mainClass": "AnimalTest",
+            "projectName": "codeplayground_b09d621"
+        },
+        {
+            "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "codeplayground_b09d621"
+        },
+        {
+            "type": "java",
             "name": "deviation",
             "request": "launch",
             "mainClass": "deviation",
