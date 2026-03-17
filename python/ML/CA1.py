@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+import LogisticRegression as lr
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 
