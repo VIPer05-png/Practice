@@ -17,6 +17,7 @@ public:
     int right(int i) { return 2 * i + 2; }
 
     // Insert element
+    
     void insert(int key) {
         if (size == MAX) {
             cout << "Heap Overflow\n";
