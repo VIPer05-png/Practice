@@ -31,6 +31,9 @@ JavaScript - Captures what you draw on the canvas
 What is the model file (math_model.h5)?
 Its a trained file that learned from thousands of image examples. It knows how to recognize digits 0-9 and math symbols. We load it once and reuse it to recognize your drawings.
 
+Where did we get math_model.h5 from? Do we download it?
+No, we created it ourselves! When we run our `train_simple.py` script, the AI learns from the MNIST dataset (for digits) and our computer-generated images (for math symbols). After it finishes learning, TensorFlow saves its "brain" into a file named `math_model.h5`. By doing this, our website doesn't have to relearn everything from scratch every time it starts up; it just loads the saved brain.
+
 What is LaTeX?
 Its a language for writing math formulas nicely. Instead of typing a messy fraction like 2/3, LaTeX shows it as a real fraction symbol. We use it to make your handwritten math look professional.
 
@@ -45,6 +48,7 @@ LABELS dictionary - Maps numbers to symbols like 0 maps to '0', 10 maps to '+'
 
 Important terms explained
 
+Aspect Ratio Preservation - When we resize a drawn number (like a tall '1') to fit the AI's standard 28x28 box, we calculate a scaling factor so it doesn't get stretched and instantly misclassified by the AI!
 Segmentation - Breaking one big image into separate pieces each symbol
 Contours - The edges or outline of each shape in the image
 Base64 - A way to send images as text through the internet

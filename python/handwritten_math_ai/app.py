@@ -83,12 +83,26 @@ def predict():
         # Get just this one symbol
         symbol_image = binary[y:y+h, x:x+w]
         
-        # Resize to 28x28 (size AI was trained on)
-        # Add padding around it
-        pad = 4
-        symbol_image = cv2.copyMakeBorder(symbol_image, pad, pad, pad, pad, 
-                                         cv2.BORDER_CONSTANT, value=0)
-        symbol_image = cv2.resize(symbol_image, (28, 28))
+        # We must maintain the aspect ratio! Making it a strict 28x28 box heavily distorts numbers like '1'.
+        # The AI was trained on MNIST, where digits are 20x20 and centered inside a 28x28 box.
+        height, width = symbol_image.shape
+        
+        # Find scaling factor to fit into a 20x20 box
+        scale = 20.0 / max(height, width)
+        new_w = max(1, int(width * scale))
+        new_h = max(1, int(height * scale))
+        
+        # Resize maintaining aspect ratio
+        symbol_image = cv2.resize(symbol_image, (new_w, new_h))
+        
+        # Create a perfect 28x28 black background image
+        final_image = np.zeros((28, 28), dtype=np.uint8)
+        
+        # Calculate where to paste it so it remains perfectly centered
+        start_x = (28 - new_w) // 2
+        start_y = (28 - new_h) // 2
+        final_image[start_y:start_y+new_h, start_x:start_x+new_w] = symbol_image
+        symbol_image = final_image
         
         # Prepare for AI: reshape to right format and normalize values
         symbol_array = symbol_image.reshape(1, 28, 28, 1).astype('float32') / 255.0

@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
+import cv2
 # These help the AI learn by providing specialized "brain layers"
 layers = tf.keras.layers
 models = tf.keras.models
@@ -13,7 +14,8 @@ MODEL_NAME = 'models/math_model.h5'
 def generate_symbols():
     """
     Generate math symbols (+, -, *, /)
-    Each symbol gets 800 variations with random distortions
+    Each symbol gets 6000 variations with random distortions
+    and matches the preprocessing in app.py (scaled to 20x20 and centered).
     """
     print("Generating math symbols (+, -, *, /) with distortions...")
     symbols = ['+', '-', '*', '/']
@@ -21,27 +23,45 @@ def generate_symbols():
     labels = []
     
     try:
-        font = ImageFont.truetype("arial.ttf", 22)
+        font = ImageFont.truetype("arial.ttf", 50)
     except:
         font = ImageFont.load_default()
 
     for i, symbol in enumerate(symbols):
-        for _ in range(800):
-            # Create a blank black image
-            img = Image.new('L', (28, 28), 0)
+        for _ in range(6000):
+            # Create a blank black image (large enough for the font)
+            img = Image.new('L', (100, 100), 0)
             draw = ImageDraw.Draw(img)
             
-            # Random position (mimics messy handwriting)
-            off_x = np.random.randint(-3, 4)
-            off_y = np.random.randint(-3, 4)
-            draw.text((7 + off_x, 1 + off_y), symbol, fill=255, font=font)
+            draw.text((25, 25), symbol, fill=255, font=font)
             
             # Random rotation
             angle = np.random.randint(-20, 21)
-            img = img.rotate(angle)
+            img = img.rotate(angle, fillcolor=0)
             
-            data.append(np.array(img))
-            labels.append(10 + i) # Labels 10-13
+            arr = np.array(img)
+            
+            # Crop to bounding box and scale to 20x20, exactly like app.py
+            coords = cv2.findNonZero(arr)
+            if coords is not None:
+                x, y, w, h = cv2.boundingRect(coords)
+                symbol_image = arr[y:y+h, x:x+w]
+                
+                height, width = symbol_image.shape
+                scale = 20.0 / max(height, width)
+                new_w = max(1, int(width * scale))
+                new_h = max(1, int(height * scale))
+                
+                symbol_image = cv2.resize(symbol_image, (new_w, new_h))
+                
+                # Center in 28x28 image
+                final_image = np.zeros((28, 28), dtype=np.uint8)
+                start_x = (28 - new_w) // 2
+                start_y = (28 - new_h) // 2
+                final_image[start_y:start_y+new_h, start_x:start_x+new_w] = symbol_image
+                
+                data.append(final_image)
+                labels.append(10 + i) # Labels 10-13
             
     return np.array(data), np.array(labels)
 
