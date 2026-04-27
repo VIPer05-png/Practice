@@ -9,5 +9,8 @@ if %errorlevel% neq 0 (
     echo Compilation failed!
 ) else (
     echo Compilation successful!
+    echo Deploying to Tomcat...
+    xcopy /E /I /Y WebContent C:\xampp\tomcat\webapps\travelo
+    echo Deployment successful! You can now access the app at http://localhost:8080/travelo/
 )
 pause
