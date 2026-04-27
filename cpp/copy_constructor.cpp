@@ -14,6 +14,7 @@ public:
     int area(){
         return (2*(l+b)*h);
     }
+    
 
     Room(const Room& r)
     {
