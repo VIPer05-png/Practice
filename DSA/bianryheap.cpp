@@ -6,17 +6,11 @@ using namespace std;
 int heap[MAX];
 int size = 0;
 
-// Swap function
-void swap(int &a, int &b) {
-    int temp = a;
-    a = b;
-    b = temp;
-}
-
-// Insert into heap
+// Insert into Max Heap
 void insert(int value) {
+
     if (size == MAX) {
-        cout << "Heap is full\n";
+        cout << "Heap is Full\n";
         return;
     }
 
@@ -25,17 +19,22 @@ void insert(int value) {
     heap[i] = value;
     size++;
 
-    // Heapify up
-    while (i > 0 && heap[(i - 1) / 2] < heap[i]) {
-        swap(heap[i], heap[(i - 1) / 2]);
+    // Heapify Up
+    while (i != 0 && heap[(i - 1) / 2] < heap[i]) {
+
+        int temp = heap[i];
+        heap[i] = heap[(i - 1) / 2];
+        heap[(i - 1) / 2] = temp;
+
         i = (i - 1) / 2;
     }
 }
 
-// Delete root
+// Delete Root
 void deleteRoot() {
+
     if (size <= 0) {
-        cout << "Heap is empty\n";
+        cout << "Heap is Empty\n";
         return;
     }
 
@@ -43,12 +42,14 @@ void deleteRoot() {
     heap[0] = heap[size - 1];
     size--;
 
-    // Heapify down
+    // Heapify Down
     int i = 0;
 
     while (true) {
+
         int left = 2 * i + 1;
         int right = 2 * i + 2;
+
         int largest = i;
 
         if (left < size && heap[left] > heap[largest])
@@ -58,24 +59,31 @@ void deleteRoot() {
             largest = right;
 
         if (largest != i) {
-            swap(heap[i], heap[largest]);
+
+            int temp = heap[i];
+            heap[i] = heap[largest];
+            heap[largest] = temp;
+
             i = largest;
-        } else {
+        }
+        else {
             break;
         }
     }
 }
 
-// Display heap
+// Display Heap
 void display() {
+
     for (int i = 0; i < size; i++) {
         cout << heap[i] << " ";
     }
+
     cout << endl;
 }
 
-// Main
 int main() {
+
     insert(40);
     insert(30);
     insert(35);
