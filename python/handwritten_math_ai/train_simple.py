@@ -11,6 +11,8 @@ from PIL import Image, ImageDraw, ImageFont
 # Set the path names
 MODEL_NAME = 'models/math_model.h5'
 
+
+
 def generate_symbols():
     """
     Generate math symbols (+, -, *, /)
