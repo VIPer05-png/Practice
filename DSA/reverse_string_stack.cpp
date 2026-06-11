@@ -5,15 +5,17 @@ using namespace std;
 int main(){
     string name ="ARYAN";
     
-    stack <char>st;
+    stack <char> st;
     for(char ch : name){
         st.push(ch);
     }
+
     string rev="";
     while(!st.empty()){
         rev += st.top();
         st.pop();
     }
-    cout<<rev;
+
+    cout << rev;
     return 0;
 }
